@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 """
     pygments.lexers.ml
     ~~~~~~~~~~~~~~~~~~
 
     Lexers for ML family languages.
 
-    :copyright: Copyright 2006-2019 by the Pygments team, see AUTHORS.
+    :copyright: Copyright 2006-2021 by the Pygments team, see AUTHORS.
     :license: BSD, see LICENSE for details.
 """
 
@@ -142,7 +141,7 @@ class SMLLexer(RegexLexer):
             (r'#\s+(%s)' % symbolicid_re, Name.Label),
             # Some reserved words trigger a special, local lexer state change
             (r'\b(datatype|abstype)\b(?!\')', Keyword.Reserved, 'dname'),
-            (r'(?=\b(exception)\b(?!\'))', Text, ('ename')),
+            (r'\b(exception)\b(?!\')', Keyword.Reserved, 'ename'),
             (r'\b(functor|include|open|signature|structure)\b(?!\')',
              Keyword.Reserved, 'sname'),
             (r'\b(type|eqtype)\b(?!\')', Keyword.Reserved, 'tname'),
@@ -315,15 +314,14 @@ class SMLLexer(RegexLexer):
         'ename': [
             include('whitespace'),
 
-            (r'(exception|and)\b(\s+)(%s)' % alphanumid_re,
+            (r'(and\b)(\s+)(%s)' % alphanumid_re,
              bygroups(Keyword.Reserved, Text, Name.Class)),
-            (r'(exception|and)\b(\s*)(%s)' % symbolicid_re,
+            (r'(and\b)(\s*)(%s)' % symbolicid_re,
              bygroups(Keyword.Reserved, Text, Name.Class)),
             (r'\b(of)\b(?!\')', Keyword.Reserved),
+            (r'(%s)|(%s)' % (alphanumid_re, symbolicid_re), Name.Class),
 
-            include('breakout'),
-            include('core'),
-            (r'\S+', Error),
+            default('#pop'),
         ],
 
         'datcon': [
@@ -444,6 +442,7 @@ class OcamlLexer(RegexLexer):
             default('#pop'),
         ],
     }
+
 
 class OpaLexer(RegexLexer):
     """
@@ -767,6 +766,7 @@ class OpaLexer(RegexLexer):
         ],
     }
 
+
 class ReasonLexer(RegexLexer):
     """
     For the ReasonML language (https://reasonml.github.io/).
@@ -780,18 +780,18 @@ class ReasonLexer(RegexLexer):
     mimetypes = ['text/x-reasonml']
 
     keywords = (
-    'as', 'assert', 'begin', 'class', 'constraint', 'do', 'done', 'downto',
-    'else', 'end', 'exception', 'external', 'false', 'for', 'fun', 'esfun',
-    'function', 'functor', 'if', 'in', 'include', 'inherit', 'initializer', 'lazy',
-    'let', 'switch', 'module', 'pub', 'mutable', 'new', 'nonrec', 'object', 'of',
-    'open', 'pri', 'rec', 'sig', 'struct', 'then', 'to', 'true', 'try',
-    'type', 'val', 'virtual', 'when', 'while', 'with'
+        'as', 'assert', 'begin', 'class', 'constraint', 'do', 'done', 'downto',
+        'else', 'end', 'exception', 'external', 'false', 'for', 'fun', 'esfun',
+        'function', 'functor', 'if', 'in', 'include', 'inherit', 'initializer', 'lazy',
+        'let', 'switch', 'module', 'pub', 'mutable', 'new', 'nonrec', 'object', 'of',
+        'open', 'pri', 'rec', 'sig', 'struct', 'then', 'to', 'true', 'try',
+        'type', 'val', 'virtual', 'when', 'while', 'with',
     )
     keyopts = (
         '!=', '#', '&', '&&', r'\(', r'\)', r'\*', r'\+', ',', '-',
         r'-\.', '=>', r'\.', r'\.\.', r'\.\.\.', ':', '::', ':=', ':>', ';', ';;', '<',
         '<-', '=', '>', '>]', r'>\}', r'\?', r'\?\?', r'\[', r'\[<', r'\[>',
-        r'\[\|', ']', '_', '`', r'\{', r'\{<', r'\|\|', r'\|', r'\|]', r'\}', '~'
+        r'\[\|', ']', '_', '`', r'\{', r'\{<', r'\|', r'\|\|', r'\|]', r'\}', '~'
     )
 
     operators = r'[!$%&*+\./:<=>?@^|~-]'
@@ -812,7 +812,7 @@ class ReasonLexer(RegexLexer):
             (r'\b([A-Z][\w\']*)(?=\s*\.)', Name.Namespace, 'dotted'),
             (r'\b([A-Z][\w\']*)', Name.Class),
             (r'//.*?\n', Comment.Single),
-            (r'\/\*(?![\/])', Comment.Multiline, 'comment'),
+            (r'\/\*(?!/)', Comment.Multiline, 'comment'),
             (r'\b(%s)\b' % '|'.join(keywords), Keyword),
             (r'(%s)' % '|'.join(keyopts[::-1]), Operator.Word),
             (r'(%s|%s)?%s' % (infix_syms, prefix_syms, operators), Operator),
@@ -837,10 +837,10 @@ class ReasonLexer(RegexLexer):
             (r'[~?][a-z][\w\']*:', Name.Variable),
         ],
         'comment': [
-            (r'[^\/*]+', Comment.Multiline),
+            (r'[^/*]+', Comment.Multiline),
             (r'\/\*', Comment.Multiline, '#push'),
             (r'\*\/', Comment.Multiline, '#pop'),
-            (r'[\*]', Comment.Multiline),
+            (r'\*', Comment.Multiline),
         ],
         'string': [
             (r'[^\\"]+', String.Double),
@@ -885,10 +885,10 @@ class FStarLexer(RegexLexer):
     assume_keywords = ('assume', 'admit', 'assert', 'calc')
     keyopts = (
         r'~', r'-', r'/\\', r'\\/', r'<:', r'<@', r'\(\|', r'\|\)', r'#', r'u#',
-        r'&', r'\(\)', r'\(', r'\)', r',', r'~>', r'->', r'<--', r'<-', r'<==>',
-        r'==>', r'\.', r'\?\.', r'\?', r'\.\[', r'\.\(\|', r'\.\(', r'\.\[\|',
-        r'\{:pattern', r':', r'::', r':=', r';;', r';', r'=', r'%\[', r'!\{',
-        r'\[@', r'\[', r'\[\|', r'\|>', r'\]', r'\|\]', r'\{', r'\|', r'\}', r'\$'
+        r'&', r'\(', r'\)', r'\(\)', r',', r'~>', r'->', r'<-', r'<--', r'<==>',
+        r'==>', r'\.', r'\?', r'\?\.', r'\.\[', r'\.\(', r'\.\(\|', r'\.\[\|',
+        r'\{:pattern', r':', r'::', r':=', r';', r';;', r'=', r'%\[', r'!\{',
+        r'\[', r'\[@', r'\[\|', r'\|>', r'\]', r'\|\]', r'\{', r'\|', r'\}', r'\$'
     )
 
     operators = r'[!$%&*+\./:<=>?@^|~-]'
@@ -928,7 +928,7 @@ class FStarLexer(RegexLexer):
              String.Char),
             (r"'.'", String.Char),
             (r"'", Keyword),  # a stray quote is another syntax element
-            (r"\`([\w\'\.]+)\`", Operator.Word),  # for infix applications
+            (r"\`([\w\'.]+)\`", Operator.Word),  # for infix applications
             (r"\`", Keyword),  # for quoting
             (r'"', String.Double, 'string'),
 

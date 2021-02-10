@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 """
     pygments.lexers.hdl
     ~~~~~~~~~~~~~~~~~~~
 
     Lexers for hardware descriptor languages.
 
-    :copyright: Copyright 2006-2019 by the Pygments team, see AUTHORS.
+    :copyright: Copyright 2006-2021 by the Pygments team, see AUTHORS.
     :license: BSD, see LICENSE for details.
 """
 
@@ -13,7 +12,7 @@ import re
 
 from pygments.lexer import RegexLexer, bygroups, include, using, this, words
 from pygments.token import Text, Comment, Operator, Keyword, Name, String, \
-    Number, Punctuation, Error
+    Number, Punctuation
 
 __all__ = ['VerilogLexer', 'SystemVerilogLexer', 'VhdlLexer']
 
@@ -51,7 +50,6 @@ class VerilogLexer(RegexLexer):
             (r'([0-9]+)|(\'o)[0-7]+', Number.Oct),
             (r'\'[01xz]', Number),
             (r'\d+[Ll]?', Number.Integer),
-            (r'\*/', Error),
             (r'[~!%^&*+=|?:<>/-]', Operator),
             (r'[()\[\],.;\']', Punctuation),
             (r'`[a-zA-Z_]\w*', Name.Constant),
@@ -105,11 +103,12 @@ class VerilogLexer(RegexLexer):
             (words((
                 'byte', 'shortint', 'int', 'longint', 'integer', 'time',
                 'bit', 'logic', 'reg', 'supply0', 'supply1', 'tri', 'triand',
-                'trior', 'tri0', 'tri1', 'trireg', 'uwire', 'wire', 'wand', 'wo'
+                'trior', 'tri0', 'tri1', 'trireg', 'uwire', 'wire', 'wand', 'wor'
                 'shortreal', 'real', 'realtime'), suffix=r'\b'),
              Keyword.Type),
             (r'[a-zA-Z_]\w*:(?!:)', Name.Label),
             (r'\$?[a-zA-Z_]\w*', Name),
+            (r'\\(\S+)', Name),
         ],
         'string': [
             (r'"', String, '#pop'),
@@ -130,6 +129,19 @@ class VerilogLexer(RegexLexer):
             (r'[\w:]+\*?', Name.Namespace, '#pop')
         ]
     }
+
+    def analyse_text(text):
+        """Verilog code will use one of reg/wire/assign for sure, and that
+        is not common elsewhere."""
+        result = 0
+        if 'reg' in text:
+            result += 0.1
+        if 'wire' in text:
+            result += 0.1
+        if 'assign' in text:
+            result += 0.1
+
+        return result
 
 
 class SystemVerilogLexer(RegexLexer):
@@ -161,62 +173,90 @@ class SystemVerilogLexer(RegexLexer):
             (r'[{}#@]', Punctuation),
             (r'L?"', String, 'string'),
             (r"L?'(\\.|\\[0-7]{1,3}|\\x[a-fA-F0-9]{1,2}|[^\\\'\n])'", String.Char),
+
             (r'(\d+\.\d*|\.\d+|\d+)[eE][+-]?\d+[lL]?', Number.Float),
             (r'(\d+\.\d*|\.\d+|\d+[fF])[fF]?', Number.Float),
-            (r'([0-9]+)|(\'h)[0-9a-fA-F]+', Number.Hex),
-            (r'([0-9]+)|(\'b)[01]+', Number.Bin),
-            (r'([0-9]+)|(\'d)[0-9]+', Number.Integer),
-            (r'([0-9]+)|(\'o)[0-7]+', Number.Oct),
-            (r'\'[01xz]', Number),
-            (r'\d+[Ll]?', Number.Integer),
-            (r'\*/', Error),
+
+            (r'([1-9][_0-9]*)?\s*\'[sS]?[bB]\s*[xXzZ?01][_xXzZ?01]*',
+             Number.Bin),
+            (r'([1-9][_0-9]*)?\s*\'[sS]?[oO]\s*[xXzZ?0-7][_xXzZ?0-7]*',
+             Number.Oct),
+            (r'([1-9][_0-9]*)?\s*\'[sS]?[dD]\s*[xXzZ?0-9][_xXzZ?0-9]*',
+             Number.Integer),
+            (r'([1-9][_0-9]*)?\s*\'[sS]?[hH]\s*[xXzZ?0-9a-fA-F][_xXzZ?0-9a-fA-F]*',
+             Number.Hex),
+
+            (r'\'[01xXzZ]', Number),
+            (r'[0-9][_0-9]*', Number.Integer),
+
             (r'[~!%^&*+=|?:<>/-]', Operator),
-            (r'[()\[\],.;\']', Punctuation),
+            (words(('inside', 'dist'), suffix=r'\b'), Operator.Word),
+
+            (r'[()\[\],.;\'$]', Punctuation),
             (r'`[a-zA-Z_]\w*', Name.Constant),
 
             (words((
                 'accept_on', 'alias', 'always', 'always_comb', 'always_ff',
                 'always_latch', 'and', 'assert', 'assign', 'assume', 'automatic',
-                'before', 'begin', 'bind', 'bins', 'binsof', 'bit', 'break', 'buf',
-                'bufif0', 'bufif1', 'byte', 'case', 'casex', 'casez', 'cell',
-                'chandle', 'checker', 'class', 'clocking', 'cmos', 'config',
-                'const', 'constraint', 'context', 'continue', 'cover', 'covergroup',
+                'before', 'begin', 'bind', 'bins', 'binsof', 'break', 'buf',
+                'bufif0', 'bufif1', 'case', 'casex', 'casez', 'cell',
+                'checker', 'clocking', 'cmos', 'config',
+                'constraint', 'context', 'continue', 'cover', 'covergroup',
                 'coverpoint', 'cross', 'deassign', 'default', 'defparam', 'design',
-                'disable', 'dist', 'do', 'edge', 'else', 'end', 'endcase',
-                'endchecker', 'endclass', 'endclocking', 'endconfig', 'endfunction',
+                'disable', 'do', 'edge', 'else', 'end', 'endcase',
+                'endchecker', 'endclocking', 'endconfig', 'endfunction',
                 'endgenerate', 'endgroup', 'endinterface', 'endmodule', 'endpackage',
                 'endprimitive', 'endprogram', 'endproperty', 'endsequence',
-                'endspecify', 'endtable', 'endtask', 'enum', 'event', 'eventually',
-                'expect', 'export', 'extends', 'extern', 'final', 'first_match',
+                'endspecify', 'endtable', 'endtask', 'enum', 'eventually',
+                'expect', 'export', 'extern', 'final', 'first_match',
                 'for', 'force', 'foreach', 'forever', 'fork', 'forkjoin', 'function',
                 'generate', 'genvar', 'global', 'highz0', 'highz1', 'if', 'iff',
                 'ifnone', 'ignore_bins', 'illegal_bins', 'implies', 'implements', 'import',
-                'incdir', 'include', 'initial', 'inout', 'input', 'inside',
-                'instance', 'int', 'integer', 'interconnect', 'interface', 'intersect', 'join',
+                'incdir', 'include', 'initial', 'inout', 'input',
+                'instance', 'interconnect', 'interface', 'intersect', 'join',
                 'join_any', 'join_none', 'large', 'let', 'liblist', 'library',
-                'local', 'localparam', 'logic', 'longint', 'macromodule', 'matches',
+                'local', 'localparam', 'macromodule', 'matches',
                 'medium', 'modport', 'module', 'nand', 'negedge', 'nettype', 'new', 'nexttime',
                 'nmos', 'nor', 'noshowcancelled', 'not', 'notif0', 'notif1', 'null',
                 'or', 'output', 'package', 'packed', 'parameter', 'pmos', 'posedge',
                 'primitive', 'priority', 'program', 'property', 'protected', 'pull0',
                 'pull1', 'pulldown', 'pullup', 'pulsestyle_ondetect',
                 'pulsestyle_onevent', 'pure', 'rand', 'randc', 'randcase',
-                'randsequence', 'rcmos', 'real', 'realtime', 'ref', 'reg',
+                'randsequence', 'rcmos', 'ref',
                 'reject_on', 'release', 'repeat', 'restrict', 'return', 'rnmos',
                 'rpmos', 'rtran', 'rtranif0', 'rtranif1', 's_always', 's_eventually',
                 's_nexttime', 's_until', 's_until_with', 'scalared', 'sequence',
-                'shortint', 'shortreal', 'showcancelled', 'signed', 'small', 'soft', 'solve',
-                'specify', 'specparam', 'static', 'string', 'strong', 'strong0',
-                'strong1', 'struct', 'super', 'supply0', 'supply1', 'sync_accept_on',
+                'showcancelled', 'small', 'soft', 'solve',
+                'specify', 'specparam', 'static', 'strong', 'strong0',
+                'strong1', 'struct', 'super', 'sync_accept_on',
                 'sync_reject_on', 'table', 'tagged', 'task', 'this', 'throughout',
-                'time', 'timeprecision', 'timeunit', 'tran', 'tranif0', 'tranif1',
-                'tri', 'tri0', 'tri1', 'triand', 'trior', 'trireg', 'type',
-                'typedef', 'union', 'unique', 'unique0', 'unsigned', 'until',
-                'until_with', 'untyped', 'use', 'uwire', 'var', 'vectored',
-                'virtual', 'void', 'wait', 'wait_order', 'wand', 'weak', 'weak0',
-                'weak1', 'while', 'wildcard', 'wire', 'with', 'within', 'wor',
-                'xnor', 'xor'), suffix=r'\b'),
+                'timeprecision', 'timeunit', 'tran', 'tranif0', 'tranif1',
+                'typedef', 'union', 'unique', 'unique0', 'until',
+                'until_with', 'untyped', 'use', 'vectored',
+                'virtual', 'wait', 'wait_order', 'weak', 'weak0',
+                'weak1', 'while', 'wildcard', 'with', 'within',
+                'xnor', 'xor'),
+                suffix=r'\b'),
              Keyword),
+
+            (r'(class)(\s+)([a-zA-Z_]\w*)',
+             bygroups(Keyword.Declaration, Text, Name.Class)),
+            (r'(extends)(\s+)([a-zA-Z_]\w*)',
+             bygroups(Keyword.Declaration, Text, Name.Class)),
+            (r'(endclass\b)(?:(\s*)(:)(\s*)([a-zA-Z_]\w*))?',
+             bygroups(Keyword.Declaration, Text, Punctuation, Text, Name.Class)),
+
+            (words((
+                # Variable types
+                'bit', 'byte', 'chandle', 'const', 'event', 'int', 'integer',
+                'logic', 'longint', 'real', 'realtime', 'reg', 'shortint',
+                'shortreal', 'signed', 'string', 'time', 'type', 'unsigned',
+                'var', 'void',
+                # Net types
+                'supply0', 'supply1', 'tri', 'triand', 'trior', 'trireg',
+                'tri0', 'tri1', 'uwire', 'wand', 'wire', 'wor'),
+                suffix=r'\b'),
+             Keyword.Type),
 
             (words((
                 '`__FILE__', '`__LINE__', '`begin_keywords', '`celldefine',
@@ -307,18 +347,9 @@ class SystemVerilogLexer(RegexLexer):
                 ), suffix=r'\b'),
              Name.Builtin),
 
-            (r'(class)(\s+)', bygroups(Keyword, Text), 'classname'),
-            (words((
-                'byte', 'shortint', 'int', 'longint', 'integer', 'time',
-                'bit', 'logic', 'reg', 'supply0', 'supply1', 'tri', 'triand',
-                'trior', 'tri0', 'tri1', 'trireg', 'uwire', 'wire', 'wand', 'wor'
-                'shortreal', 'real', 'realtime'), suffix=r'\b'),
-             Keyword.Type),
             (r'[a-zA-Z_]\w*:(?!:)', Name.Label),
             (r'\$?[a-zA-Z_]\w*', Name),
-        ],
-        'classname': [
-            (r'[a-zA-Z_]\w*', Name.Class, '#pop'),
+            (r'\\(\S+)', Name),
         ],
         'string': [
             (r'"', String, '#pop'),

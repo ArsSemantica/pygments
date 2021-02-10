@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 """
     pygments.lexers.yang
     ~~~~~~~~~~~~~~~~~~~~
 
     Lexer for the YANG 1.1 modeling language. See :rfc:`7950`.
 
-    :copyright: Copyright 2006-2020 by the Pygments team, see AUTHORS.
+    :copyright: Copyright 2006-2021 by the Pygments team, see AUTHORS.
     :license: BSD, see LICENSE for details.
 """
 
@@ -59,7 +58,7 @@ class YangLexer(RegexLexer):
              "int8", "leafref", "string", "uint16", "uint32", "uint64",
              "uint8", "union")
 
-    suffix_re_pattern = r'(?=[^\w\-\:])'
+    suffix_re_pattern = r'(?=[^\w\-:])'
 
     tokens = {
         'comments': [
@@ -70,7 +69,7 @@ class YangLexer(RegexLexer):
         ],
         "root": [
             (r'\s+', Text.Whitespace),
-            (r'[\{\}\;]+', Token.Punctuation),
+            (r'[{};]+', Token.Punctuation),
             (r'(?<![\-\w])(and|or|not|\+|\.)(?![\-\w])', Token.Operator),
 
             (r'"(?:\\"|[^"])*?"', String.Double),
@@ -84,9 +83,9 @@ class YangLexer(RegexLexer):
              bygroups(Name.Namespace, Token.Punctuation, Name.Variable)),
 
             #match BNF stmt `date-arg-str`
-            (r'([0-9]{4}\-[0-9]{2}\-[0-9]{2})(?=[\s\{\}\;])', Name.Label),
-            (r'([0-9]+\.[0-9]+)(?=[\s\{\}\;])', Number.Float),
-            (r'([0-9]+)(?=[\s\{\}\;])', Number.Integer),
+            (r'([0-9]{4}\-[0-9]{2}\-[0-9]{2})(?=[\s{};])', Name.Label),
+            (r'([0-9]+\.[0-9]+)(?=[\s{};])', Number.Float),
+            (r'([0-9]+)(?=[\s{};])', Number.Integer),
 
             (words(TOP_STMTS_KEYWORDS, suffix=suffix_re_pattern), Token.Keyword),
             (words(MODULE_HEADER_STMT_KEYWORDS, suffix=suffix_re_pattern), Token.Keyword),
@@ -99,6 +98,6 @@ class YangLexer(RegexLexer):
             (words(TYPES, suffix=suffix_re_pattern), Name.Class),
             (words(CONSTANTS_KEYWORDS, suffix=suffix_re_pattern), Name.Class),
 
-            (r'[^;{}\s\'\"]+', Name.Variable),
+            (r'[^;{}\s\'"]+', Name.Variable),
         ]
     }
